@@ -22,7 +22,7 @@ describe.only('', function () {
         //shutdown();
     });
 
-    it('fetch stock quotes', function (done) {
+    it.skip('fetch stock quotes', function (done) {
         stockFetcher.fetch(stockSymbols, function(quotes) {
             console.log(quotes);
             expect(quotes.length).to.eql(stockSymbols.length);
@@ -42,28 +42,33 @@ describe.only('', function () {
         done();
     });
 
-    it('test db', function(done){
+    it('test db find', function(done){
 
         db.collection('stocks').findOne({}, function (e, result) {
                 if (e) console.log(e);
                 console.log(result.symbols);
                 console.log('XXX');
+                done();
             }
         );
         console.log('???');
 
-        db.collection('stocks').find({}, {limit: 10, sort: [['_id', -1]]})
-            .toArray(function (e, results) {
-                if (e) console.log(e);
-                console.log(results);
-            }
-        )
+        //db.collection('stocks').find({}, {limit: 10, sort: [['_id', -1]]})
+        //    .toArray(function (e, results) {
+        //        if (e) console.log(e);
+        //        console.log(results);
+        //    }
+        //)
         console.log('???');
-        db.collectionNames(function(err, items) {
-            items.forEach(function(item) {
-                console.log(item.name);
-            });
-        });
-        done();
+        //db.collectionNames(function(err, items) {
+        //    items.forEach(function(item) {
+        //        console.log(item.name);
+        //    });
+        //});
+
     });
+
+    //it('test db insert', function(done){
+    //
+    //});
 });

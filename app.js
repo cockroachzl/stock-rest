@@ -63,6 +63,8 @@ app.del('/collections/:collectionName/:id', function (req, res, next) {
     })
 })
 
+var stockFetcher = new StockFetcher(db);
+setInterval(stockFetcher.update.bind(stockFetcher), 5000);
 //var populateStockFromYahooFinanceToDb = function(symbols) {
 //    stockFetcher.fetch(symbols, insertStock);
 //}

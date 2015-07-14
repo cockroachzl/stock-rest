@@ -6,6 +6,7 @@
 'use strict';
 var http = require('http');
 var moment = require('moment');
+var assert = require('assert');
 
 //stocks: stock static info: symbols
 //intraday_quotes : quotes within the current day
@@ -29,6 +30,18 @@ function StockFetcher(db) {
     var insertQuotes = function(collectionName, quotes) {
         // Get the documents collection
         var collection = db.collection(collectionName);
+        console.log("insert into " + collectionName);
+        // Insert some documents
+        collection.insert(quotes, function(err, result) {
+            assert.equal(err, null);
+        });
+    }
+
+    var insertIntradayQuotes = function(quotes) {
+        var collectionName = 'intraday_quotes';
+        // Get the documents collection
+        var collection = db.collection(collectionName);
+        console.log("insert into " + collectionName);
         // Insert some documents
         collection.insert(quotes, function(err, result) {
             assert.equal(err, null);
@@ -37,30 +50,33 @@ function StockFetcher(db) {
 
     this.update = function() {
         //get stock watch list
+        var that = this;
         this.db.collection('stocks').findOne({}, function (e, result) {
                 if (e) throw e;
-                this.symbols = result.symbols;
+                that.symbols = result.symbols;
+                //insert into intraday db every 5 seconds if the stock market is open
+                if(that.isMarketOpen()) {
+                    //that.fetch(that.symbols, insertQuotes.bind(undefined, 'intraday_quotes'));
+                    that.fetch(that.symbols, insertIntradayQuotes);
+                }
+                //insert into daily db if stock market is close and today's close quote is not in the db
+                else {
+                    var now = new Date();
+                    var date = [now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()].join('-');
+                    var population;
+                    that.db.collection('population').findOne({'date':date}, function (e, result) {
+                        if (e) throw e;
+                        population = result;
+                        if (!population) {
+                            that.fetch(that.symbols, insertQuotes.bind('interday_quotes'));
+                            population = {'date': date};
+                            that.db.collection('population').insert(population, null);
+                        }
+                    });
+                }
             }
         );
-        //insert into intraday db every 5 seconds if the stock market is open
-        if(this.isMarketOpen()) {
-            this.fetch(this.symbols, insertQuotes.bind('intraday_quotes'));
-        }
-        //insert into daily db if stock market is close and today's close quote is not in the db
-        else {
-            var now = new Date();
-            var date = [now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()].join('-');
-            var population;
-            this.db.collection('population').findOne({'date':date}, function (e, result) {
-                if (e) throw e;
-                population = result;
-            });
-            if (!population) {
-                this.fetch(this.symbols, insertQuotes.bind('interday_quotes'));
-                population = {'date': date};
-                this.db.collection('population').insert(population, null);
-            }
-        }
+
     }
     /**
      * Main processing function for communicating with Yahoo Finance API
