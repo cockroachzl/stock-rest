@@ -5,8 +5,9 @@
 
 'use strict';
 var http = require('http');
+var moment = require('moment');
 
-//stocks: stock static info
+//stocks: stock static info: symbols
 //intraday_quotes : quotes within the current day
 //interday_quotes : historicall quotes
 //population: date, populated
@@ -15,9 +16,9 @@ function StockFetcher(db) {
     this.symbols = [];
 
     this.isMarketOpen = function () {
-        var now = new Date();
-        var current_hour = now.getHours();
-        var current_minutes = current_hour * 60 + now.getMinutes();
+        var now = moment().utcOffset(-4);
+        var current_hour = now.hours();
+        var current_minutes = current_hour * 60 + now.minutes();
         var marketOpen = 9 * 60 + 30;
         var marketClose = 16 * 60 + 30;
         if (current_minutes >= marketOpen && current_minutes <= marketClose) {
@@ -34,16 +35,15 @@ function StockFetcher(db) {
         });
     }
 
-    this.update = function(db) {
+    this.update = function() {
         //get stock watch list
-        db.collection('stocks').find()
-            .toArray(function (e, results) {
+        this.db.collection('stocks').findOne({}, function (e, result) {
                 if (e) throw e;
-                this.symbols = results;
+                this.symbols = result.symbols;
             }
-        )
+        );
         //insert into intraday db every 5 seconds if the stock market is open
-        if(isMarketOpen()) {
+        if(this.isMarketOpen()) {
             this.fetch(this.symbols, insertQuotes.bind('intraday_quotes'));
         }
         //insert into daily db if stock market is close and today's close quote is not in the db
@@ -51,14 +51,14 @@ function StockFetcher(db) {
             var now = new Date();
             var date = [now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()].join('-');
             var population;
-            db.collection('population').findOne({'date':date}, function (e, result) {
+            this.db.collection('population').findOne({'date':date}, function (e, result) {
                 if (e) throw e;
                 population = result;
             });
-            if (population == null) {
+            if (!population) {
                 this.fetch(this.symbols, insertQuotes.bind('interday_quotes'));
                 population = {'date': date};
-                db.collection('population').insert(population, null);
+                this.db.collection('population').insert(population, null);
             }
         }
     }
@@ -70,7 +70,7 @@ function StockFetcher(db) {
     this.fetch = function (symbols, callback) {
         var query = encodeURIComponent('select * from yahoo.finance.quotes ' +
         'where symbol in (\'' + symbols.join(',') + '\')');
-        var urlWithParams = BASE + '?' + 'q=' + query + '&format=json&diagnostics=true' + '&env=' +
+        var urlWithParams = this.BASE + '?' + 'q=' + query + '&format=json&diagnostics=true' + '&env=' +
             encodeURIComponent('store://datatables.org/alltableswithkeys');
         var completeUrl = urlWithParams + '&callback=';
         http.get(completeUrl, function(res) {

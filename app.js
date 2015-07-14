@@ -4,7 +4,7 @@ var express = require('express'),
     mongoskin = require('mongoskin'),
     bodyParser = require('body-parser'),
     logger = require('morgan'),
-    stockFetcher = require('./StockFetcher.js')();
+    StockFetcher = require('./StockFetcher.js');
 
 var app = express();
 
@@ -63,11 +63,11 @@ app.del('/collections/:collectionName/:id', function (req, res, next) {
     })
 })
 
-var populateStockFromYahooFinanceToDb = function(symbols) {
-    stockFetcher.fetch(symbols, insertStock);
-}
-
-setInterval(populateStockFromYahooFinanceToDb, 5000, ['TSLA', 'BABA']);
+//var populateStockFromYahooFinanceToDb = function(symbols) {
+//    stockFetcher.fetch(symbols, insertStock);
+//}
+//
+//setInterval(populateStockFromYahooFinanceToDb, 5000, ['TSLA', 'BABA']);
 
 app.set('port', process.env.PORT || 3000);
 var server = http.createServer(app);
