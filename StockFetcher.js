@@ -56,21 +56,31 @@ function StockFetcher(db) {
                 that.symbols = result.symbols;
                 //insert into intraday db every 5 seconds if the stock market is open
                 if(that.isMarketOpen()) {
-                    //that.fetch(that.symbols, insertQuotes.bind(undefined, 'intraday_quotes'));
-                    that.fetch(that.symbols, insertIntradayQuotes);
+                    that.fetch(that.symbols, insertQuotes.bind(undefined, 'intraday_quotes'));
+                    //that.fetch(that.symbols, insertIntradayQuotes);
                 }
                 //insert into daily db if stock market is close and today's close quote is not in the db
                 else {
-                    var now = new Date();
-                    var date = [now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()].join('-');
+                    var now = moment().utcOffset(-4);
+                    //var date = [now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()].join('-');
+                    if(now.hours() < 10) { //next early morning
+                        now.subtract(1, 'days');
+                    }
+                    var date = now.format('YYYY-MM-DD');
                     var population;
                     that.db.collection('population').findOne({'date':date}, function (e, result) {
                         if (e) throw e;
                         population = result;
                         if (!population) {
-                            that.fetch(that.symbols, insertQuotes.bind('interday_quotes'));
+                            console.log('fetching and populating interday quotes');
+                            that.fetch(that.symbols, insertQuotes.bind(undefined, 'interday_quotes'));
                             population = {'date': date};
-                            that.db.collection('population').insert(population, null);
+                            that.db.collection('population').insert(population, function(err, result) {
+                                assert.equal(err, null);
+                            });
+                        }
+                        else {
+                            console.log('already populated ' + population.date);
                         }
                     });
                 }
