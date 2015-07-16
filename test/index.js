@@ -4,7 +4,7 @@ var boot = require('../app').boot,
     shutdown = require('../app').shutdown,
     port = require('../app').port;
 
-describe('stock fetcher', function () {
+describe.skip('stock rest api test', function () {
     var id;
 
     before(function () {

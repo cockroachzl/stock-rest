@@ -1,6 +1,8 @@
 /**
  * Created by zhangliang on 6/29/2015.
  * Populate stock infos from Yahoo finance and store in the data store.
+ * TODO: swtich to authentication token
+ * TODO: switch to promise
  */
 
 'use strict';
@@ -16,16 +18,6 @@ function StockFetcher(db) {
     this.db = db;
     this.symbols = [];
 
-    this.isMarketOpen = function () {
-        var now = moment().utcOffset(-4);
-        var current_hour = now.hours();
-        var current_minutes = current_hour * 60 + now.minutes();
-        var marketOpen = 9 * 60 + 30;
-        var marketClose = 16 * 60 + 30;
-        if (current_minutes >= marketOpen && current_minutes <= marketClose) {
-            return true;
-        }
-    }
 
     var insertQuotes = function(collectionName, quotes) {
         // Get the documents collection
@@ -55,7 +47,7 @@ function StockFetcher(db) {
                 if (e) throw e;
                 that.symbols = result.symbols;
                 //insert into intraday db every 5 seconds if the stock market is open
-                if(that.isMarketOpen()) {
+                if(StockFetcher.isMarketOpen()) {
                     that.fetch(that.symbols, insertQuotes.bind(undefined, 'intraday_quotes'));
                     //that.fetch(that.symbols, insertIntradayQuotes);
                 }
@@ -122,5 +114,36 @@ function StockFetcher(db) {
 }
 
 StockFetcher.prototype.BASE = 'http://query.yahooapis.com/v1/public/yql';
+
+StockFetcher.prototype.insertQuotesPromise = function(collectionName, quotes) {
+    var that = this;
+    var promise = new Promise(function(resolve, reject) {
+        var collection = that.db.collection(collectionName);
+        console.log("insert into " + collectionName);
+        // Insert some documents
+        collection.insert(quotes, function(err, results) {
+            if(err) {
+                reject(err);
+            }
+            resolve(results);
+        });
+    });
+    return promise;
+}
+
+StockFetcher.isMarketOpen = function (now) {
+    var now = now ? now : moment().utcOffset(-4);
+    var current_hour = now.hours();
+    var current_minutes = current_hour * 60 + now.minutes();
+    var marketOpen = 9 * 60 + 30;
+    var marketClose = 16 * 60 + 30;
+    if (current_minutes >= marketOpen && current_minutes <= marketClose) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 
 module.exports = StockFetcher;

@@ -23,6 +23,13 @@ app.param('collectionName', function (req, res, next, collectionName) {
 app.get('/', function (req, res, next) {
     res.send('Select a collection, e.g., /collections/messages')
 })
+app.get('/collections', function (req, res, next) {
+    db.collectionNames(function(err, collections){
+        if (err) return next(err);
+        res.send(collections);
+    });
+})
+
 
 app.get('/collections/:collectionName', function (req, res, next) {
     req.collection.find({}, {limit: 10, sort: [['_id', -1]]})
@@ -65,11 +72,6 @@ app.del('/collections/:collectionName/:id', function (req, res, next) {
 
 var stockFetcher = new StockFetcher(db);
 setInterval(stockFetcher.update.bind(stockFetcher), 5000);
-//var populateStockFromYahooFinanceToDb = function(symbols) {
-//    stockFetcher.fetch(symbols, insertStock);
-//}
-//
-//setInterval(populateStockFromYahooFinanceToDb, 5000, ['TSLA', 'BABA']);
 
 app.set('port', process.env.PORT || 3000);
 var server = http.createServer(app);
