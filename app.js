@@ -71,7 +71,7 @@ app.del('/collections/:collectionName/:id', function (req, res, next) {
 })
 
 var stockFetcher = new StockFetcher(db);
-setInterval(stockFetcher.update.bind(stockFetcher), 5000);
+setInterval(stockFetcher.updateUsingPromise.bind(stockFetcher, 'stocks', 'intraday_quotes', 'interday_quotes', 'population'), 5000);
 
 app.set('port', process.env.PORT || 3000);
 var server = http.createServer(app);
